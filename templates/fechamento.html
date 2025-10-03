@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Fechamento do Dia - Sistema de Postagens{% endblock %}
+{% block title %}Fechamento do Dia - Sistema de Postagens - Foguete Express 🚀{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -138,7 +138,11 @@
                                 <td>{{ postagem[3][:20] }}{{ '...' if postagem[3]|length > 20 else '' }}</td>
                                 <td><span class="badge bg-{{ 'info' if postagem[6] == 'PAC' else 'warning' }}">{{ postagem[6] }}</span></td>
                                 <td>R$ {{ "%.2f"|format(postagem[5]) }}</td>
-                                <td><span class="badge bg-{{ 'success' if postagem[7] == 'PIX' else 'secondary' }}">{{ postagem[7] }}</span></td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if postagem[7] == 'PIX' else 'secondary' }}">
+                                        {{ postagem[7] or 'Pendente' }}
+                                    </span>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -172,7 +176,11 @@
                                 <td>{{ postagem[3][:20] }}{{ '...' if postagem[3]|length > 20 else '' }}</td>
                                 <td><span class="badge bg-{{ 'info' if postagem[6] == 'PAC' else 'warning' }}">{{ postagem[6] }}</span></td>
                                 <td>R$ {{ "%.2f"|format(postagem[5]) }}</td>
-                                <td><span class="badge bg-{{ 'success' if postagem[7] == 'PIX' else 'secondary' }}">{{ postagem[7] }}</span></td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if postagem[7] == 'PIX' else 'secondary' }}">
+                                        {{ postagem[7] or 'Pendente' }}
+                                    </span>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
