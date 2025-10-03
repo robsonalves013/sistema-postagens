@@ -10,7 +10,6 @@
     </div>
 </div>
 
-<!-- Resumo por Posto -->
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card stats-card posto-1">
@@ -123,7 +122,7 @@
                             <th>Tipo</th>
                             <th>Valor</th>
                             <th>Pagamento</th>
-                            <th>Hora</th>
+                            <th>Data Pagamento</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -144,14 +143,14 @@
                             <td>R$ {{ "%.2f"|format(postagem[5]) }}</td>
                             <td>
                                 <span class="badge bg-{{ 'success' if postagem[7] == 'PIX' else 'secondary' }}">
-                                    {{ postagem[7] }}
+                                    {{ postagem[7] or 'Pendente' }}
                                 </span>
                             </td>
                             <td>
-                                {% if postagem[12] %}
-                                    {{ postagem[12]|datetimeformat }}
+                                {% if postagem[10] %}
+                                    {{ postagem[10] | datetimeformat }}
                                 {% else %}
-                                    -
+                                    Pendente
                                 {% endif %}
                             </td>
                         </tr>

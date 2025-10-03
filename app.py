@@ -4,11 +4,14 @@ import os
 from datetime import datetime, date
 from fpdf import FPDF
 
+
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
 
+
 DB_FILE = 'postagens.db'
 NOME_POSTO = {1: "Shopping_Bolivia", 2: "Hotel_Family"}
+
 
 # Filtro Jinja para formatar datas no padrão "%d %m %Y"
 @app.template_filter('datetimeformat')
@@ -17,10 +20,10 @@ def datetimeformat(value, format='%d %m %Y'):
         return ''
     if isinstance(value, str):
         try:
-            dt = datetime.strptime(value, '%d-%m-%Y')
+            dt = datetime.strptime(value, '%Y-%m-%d')
         except:
             try:
-                dt = datetime.strptime(value, '%d-%m-%Y %H:%M:%S')
+                dt = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
             except:
                 return value
     elif isinstance(value, (datetime, date)):
@@ -29,12 +32,15 @@ def datetimeformat(value, format='%d %m %Y'):
         return value
     return dt.strftime(format)
 
+
 class SistemaPostagem:
     def __init__(self, db_name=DB_FILE):
         self.db_name = db_name
 
+
     def conectar(self):
         return sqlite3.connect(self.db_name)
+
 
     def criar_tabelas(self):
         conn = self.conectar()
@@ -76,6 +82,7 @@ class SistemaPostagem:
         conn.commit()
         conn.close()
 
+
     def adicionar_postagem(self, data_postagem, posto, nome_remetente, codigo_rastreio,
                            valor, tipo_postagem, tipo_pagamento=None, pagamento_pago=0, data_pagamento=None, observacoes=None):
         conn = self.conectar()
@@ -96,6 +103,7 @@ class SistemaPostagem:
             return False
         finally:
             conn.close()
+
 
     def listar_postagens_dia(self, data, posto=None):
         conn = self.conectar()
@@ -120,6 +128,7 @@ class SistemaPostagem:
         conn.close()
         return postagens
 
+
     def listar_pendentes(self):
         conn = self.conectar()
         cursor = conn.cursor()
@@ -133,6 +142,7 @@ class SistemaPostagem:
         pendentes = cursor.fetchall()
         conn.close()
         return pendentes
+
 
     def resumo_dia(self, data, posto):
         conn = self.conectar()
@@ -160,6 +170,7 @@ class SistemaPostagem:
             'posto': posto
         }
 
+
     def realizar_fechamento(self, data, posto, funcionario, observacoes=""):
         resumo = self.resumo_dia(data, posto)
         if resumo['total_postagens'] == 0:
@@ -183,6 +194,7 @@ class SistemaPostagem:
         finally:
             conn.close()
 
+
 def gerar_pdf_fechamento(resumo, postagens):
     pasta_base = 'Fechamento Diario'
     if not os.path.exists(pasta_base):
@@ -191,8 +203,10 @@ def gerar_pdf_fechamento(resumo, postagens):
     if not os.path.exists(pasta_data):
         os.makedirs(pasta_data)
 
+
     nome_posto = NOME_POSTO.get(resumo['posto'], f"Posto{resumo['posto']}")
     nome_arquivo = os.path.join(pasta_data, f"{nome_posto}_{datetime.today().strftime('%d %m %Y')}.pdf")
+
 
     pdf = FPDF()
     pdf.add_page()
@@ -218,13 +232,15 @@ def gerar_pdf_fechamento(resumo, postagens):
     return nome_arquivo
 
 
+
 sistema = SistemaPostagem()
 sistema.criar_tabelas()
+
 
 @app.route('/')
 def index():
     hoje = date.today().strftime('%d %m %Y')
-    hoje_db = date.today().strftime('%d-%m-%Y')
+    hoje_db = date.today().strftime('%Y-%m-%d')
     postagens_hoje = sistema.listar_postagens_dia(hoje_db)
     resumo_posto1 = sistema.resumo_dia(hoje_db, 1)
     resumo_posto2 = sistema.resumo_dia(hoje_db, 2)
@@ -235,10 +251,11 @@ def index():
                            data_hoje=hoje,
                            NOME_POSTO=NOME_POSTO)
 
+
 @app.route('/nova_postagem', methods=['GET', 'POST'])
 def nova_postagem():
     data_hoje = date.today().strftime('%d %m %Y')
-    data_hoje_db = date.today().strftime('%d-%m-%Y')
+    data_hoje_db = date.today().strftime('%Y-%m-%d')
     if request.method == 'POST':
         try:
             data_postagem = request.form['data_postagem']
@@ -256,6 +273,7 @@ def nova_postagem():
                 tipo_pagamento = None
             observacoes = request.form.get('observacoes')
 
+
             if not nome_remetente or not codigo_rastreio:
                 flash('Nome do remetente e código de rastreio são obrigatórios!', 'error')
                 return render_template('nova_postagem.html', data_hoje=data_hoje)
@@ -265,6 +283,7 @@ def nova_postagem():
             if posto not in [1, 2]:
                 flash('Posto deve ser Shopping Bolivia ou Hotel Family!', 'error')
                 return render_template('nova_postagem.html', data_hoje=data_hoje)
+
 
             sucesso = sistema.adicionar_postagem(
                 data_postagem, posto, nome_remetente, codigo_rastreio,
@@ -282,10 +301,12 @@ def nova_postagem():
         return render_template('nova_postagem.html', data_hoje=data_hoje)
     return render_template('nova_postagem.html', data_hoje=data_hoje)
 
+
 @app.route('/pendentes')
 def listar_pendentes():
     pendentes = sistema.listar_pendentes()
     return render_template('pendentes.html', pendentes=pendentes, NOME_POSTO=NOME_POSTO)
+
 
 @app.route('/marcar_pago/<int:id>', methods=['GET', 'POST'])
 def marcar_pago(id):
@@ -315,10 +336,11 @@ def marcar_pago(id):
         conn.close()
         return render_template('marcar_pago.html', postagem=postagem, NOME_POSTO=NOME_POSTO)
 
+
 @app.route('/fechamento')
 def fechamento():
     hoje = date.today().strftime('%d %m %Y')
-    hoje_db = date.today().strftime('%d-%m-%Y')
+    hoje_db = date.today().strftime('%Y-%m-%d')
     resumo_posto1 = sistema.resumo_dia(hoje_db, 1)
     resumo_posto2 = sistema.resumo_dia(hoje_db, 2)
     postagens_posto1 = sistema.listar_postagens_dia(hoje_db, 1)
@@ -331,16 +353,23 @@ def fechamento():
                            data_hoje=hoje,
                            NOME_POSTO=NOME_POSTO)
 
+
 @app.route('/realizar_fechamento', methods=['POST'])
 def realizar_fechamento():
     try:
-        data_fechamento = request.form['data_fechamento']
+        data_fechamento_raw = request.form['data_fechamento']
         posto = int(request.form['posto'])
         funcionario = request.form['funcionario'].strip()
         observacoes = request.form.get('observacoes', '').strip()
         if not funcionario:
             flash('Nome do funcionário é obrigatório!', 'error')
             return redirect(url_for('fechamento'))
+
+        try:
+            data_fechamento = datetime.strptime(data_fechamento_raw, '%d %m %Y').strftime('%Y-%m-%d')
+        except:
+            data_fechamento = data_fechamento_raw
+
         sucesso = sistema.realizar_fechamento(data_fechamento, posto, funcionario, observacoes)
         if sucesso:
             flash(f'Fechamento do Posto {posto} realizado com sucesso!', 'success')
@@ -361,6 +390,7 @@ def realizar_fechamento():
     except Exception as e:
         flash(f'Erro no fechamento: {str(e)}', 'error')
         return redirect(url_for('fechamento'))
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
