@@ -1,34 +1,36 @@
 {% extends "base.html" %}
-
 {% block title %}Marcar Pagamento{% endblock %}
-
 {% block content %}
 <h1>Marcar Pagamento como Pago</h1>
-
 <form method="POST">
-    <div class="mb-3">
-        <label>Remetente</label>
-        <input class="form-control" value="{{ postagem[3] }}" readonly>
-    </div>
-    <div class="mb-3">
-        <label>Código de Rastreio</label>
-        <input class="form-control" value="{{ postagem[4] }}" readonly>
-    </div>
-    <div class="mb-3">
-        <label>Valor</label>
-        <input class="form-control" value="R$ {{ '%.2f'|format(postagem[5]) }}" readonly>
-    </div>
-    <div class="mb-3">
-        <label for="data_pagamento">Data do Pagamento</label>
-        <input type="date" id="data_pagamento" name="data_pagamento" class="form-control" 
-               value="{{ postagem[10] if postagem[10] else '' }}" required>
-    </div>
-    <div class="mb-3">
-        <label for="observacoes">Observações</label>
-        <textarea id="observacoes" name="observacoes" rows="3" class="form-control">{{ postagem[11] if postagem[11] else '' }}</textarea>
-    </div>
-    <button type="submit" class="btn btn-success">Atualizar Pagamento</button>
-    <a href="{{ url_for('listar_pendentes') }}" class="btn btn-secondary">Cancelar</a>
+  <div class="mb-3">
+    <label>Remetente</label>
+    <input class="form-control" value="{{ postagem[3] }}" readonly>
+  </div>
+  <div class="mb-3">
+    <label>Código</label>
+    <input class="form-control" value="{{ postagem[4] }}" readonly>
+  </div>
+  <div class="mb-3">
+    <label>Valor</label>
+    <input class="form-control" value="R$ {{ '%.2f'|format(postagem[5]) }}" readonly>
+  </div>
+  <div class="mb-3">
+    <label>Data do Pagamento</label>
+    <input type="date" name="data_pagamento" class="form-control" value="{{ postagem[10] or '' }}" required>
+  </div>
+  <div class="mb-3">
+    <label>Forma de Pagamento</label>
+    <select name="tipo_pagamento" class="form-select" required>
+      <option value="PIX" {% if postagem[7] == 'PIX' %}selected{% endif %}>PIX</option>
+      <option value="DINHEIRO" {% if postagem[7] == 'DINHEIRO' %}selected{% endif %}>Dinheiro</option>
+    </select>
+  </div>
+  <div class="mb-3">
+    <label>Observações</label>
+    <textarea name="observacoes" class="form-control" rows="3">{{ postagem[11] or '' }}</textarea>
+  </div>
+  <button type="submit" class="btn btn-success">Confirmar Pagamento</button>
+  <a href="{{ url_for('listar_pendentes') }}" class="btn btn-secondary">Cancelar</a>
 </form>
-
 {% endblock %}

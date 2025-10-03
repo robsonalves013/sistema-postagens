@@ -29,7 +29,7 @@ class SistemaPostagem:
                 codigo_rastreio TEXT UNIQUE NOT NULL,
                 valor REAL NOT NULL,
                 tipo_postagem TEXT NOT NULL CHECK (tipo_postagem IN ('PAC', 'SEDEX')),
-                tipo_pagamento TEXT NOT NULL CHECK (tipo_pagamento IN ('PIX', 'DINHEIRO')),
+                tipo_pagamento TEXT,
                 status TEXT DEFAULT 'POSTADO',
                 pagamento_pago INTEGER DEFAULT 0,
                 data_pagamento DATE,
@@ -58,7 +58,7 @@ class SistemaPostagem:
         conn.close()
 
     def adicionar_postagem(self, data_postagem, posto, nome_remetente, codigo_rastreio,
-                           valor, tipo_postagem, tipo_pagamento, pagamento_pago=0, data_pagamento=None, observacoes=None):
+                           valor, tipo_postagem, tipo_pagamento=None, pagamento_pago=0, data_pagamento=None, observacoes=None):
         conn = self.conectar()
         cursor = conn.cursor()
         try:
@@ -164,16 +164,17 @@ class SistemaPostagem:
         finally:
             conn.close()
 
+
 def gerar_pdf_fechamento(resumo, postagens):
     pasta_base = 'Fechamento Diario'
     if not os.path.exists(pasta_base):
         os.mkdir(pasta_base)
-    pasta_data = os.path.join(pasta_base, NOME_POSTO.get(resumo['posto'], f"Posto{resumo['posto']}"), datetime.today().strftime('%Y-%m-%d'))
+    pasta_data = os.path.join(pasta_base, NOME_POSTO.get(resumo['posto'], f"Posto{resumo['posto']}"), datetime.today().strftime('%d-%m-%Y'))
     if not os.path.exists(pasta_data):
         os.makedirs(pasta_data)
 
     nome_posto = NOME_POSTO.get(resumo['posto'], f"Posto{resumo['posto']}")
-    nome_arquivo = os.path.join(pasta_data, f"{nome_posto}_{datetime.today().strftime('%Y-%m-%d')}.pdf")
+    nome_arquivo = os.path.join(pasta_data, f"{nome_posto}_{datetime.today().strftime('%d-%m-%Y')}.pdf")
 
     pdf = FPDF()
     pdf.add_page()
@@ -206,7 +207,7 @@ sistema.criar_tabelas()
 @app.route('/')
 def index():
     hoje = date.today().strftime('%d/%m/%Y')
-    hoje_db = date.today().strftime('%Y-%m-%d')
+    hoje_db = date.today().strftime('%d-%m-%Y')
     postagens_hoje = sistema.listar_postagens_dia(hoje_db)
     resumo_posto1 = sistema.resumo_dia(hoje_db, 1)
     resumo_posto2 = sistema.resumo_dia(hoje_db, 2)
@@ -221,7 +222,7 @@ def index():
 @app.route('/nova_postagem', methods=['GET', 'POST'])
 def nova_postagem():
     data_hoje = date.today().strftime('%d/%m/%Y')
-    data_hoje_db = date.today().strftime('%Y-%m-%d')
+    data_hoje_db = date.today().strftime('%d-%m-%Y')
     if request.method == 'POST':
         try:
             data_postagem = request.form['data_postagem']
@@ -230,13 +231,14 @@ def nova_postagem():
             codigo_rastreio = request.form['codigo_rastreio'].strip().upper()
             valor = float(request.form['valor'])
             tipo_postagem = request.form['tipo_postagem']
-            tipo_pagamento = request.form['tipo_pagamento']
             pagamento_pago = int(request.form.get('pagamento_pago', 0))
             data_pagamento = request.form.get('data_pagamento')
-            if data_pagamento == '':
+            if pagamento_pago == 0:
                 data_pagamento = None
+                tipo_pagamento = None
+            else:
+                tipo_pagamento = request.form['tipo_pagamento']
             observacoes = request.form.get('observacoes')
-
 
             if not nome_remetente or not codigo_rastreio:
                 flash('Nome do remetente e código de rastreio são obrigatórios!', 'error')
@@ -247,7 +249,6 @@ def nova_postagem():
             if posto not in [1, 2]:
                 flash('Posto deve ser Shopping Bolivia ou Hotel Family!', 'error')
                 return render_template('nova_postagem.html', data_hoje=data_hoje)
-
 
             sucesso = sistema.adicionar_postagem(
                 data_postagem, posto, nome_remetente, codigo_rastreio,
@@ -263,7 +264,8 @@ def nova_postagem():
         except Exception as e:
             flash(f'Erro inesperado: {str(e)}', 'error')
         return render_template('nova_postagem.html', data_hoje=data_hoje)
-    return render_template('nova_postagem.html', data_hoje=data_hoje)
+    else:
+        return render_template('nova_postagem.html', data_hoje=data_hoje)
 
 
 @app.route('/pendentes')
@@ -276,6 +278,7 @@ def listar_pendentes():
 def marcar_pago(id):
     if request.method == 'POST':
         data_pagamento = request.form['data_pagamento']
+        tipo_pagamento = request.form['tipo_pagamento']
         observacoes = request.form.get('observacoes', '').strip()
         conn = sistema.conectar()
         cursor = conn.cursor()
@@ -283,9 +286,10 @@ def marcar_pago(id):
             UPDATE postagens
             SET pagamento_pago = 1,
                 data_pagamento = ?,
+                tipo_pagamento = ?,
                 observacoes = ?
             WHERE id = ?
-        """, (data_pagamento, observacoes, id))
+        """, (data_pagamento, tipo_pagamento, observacoes, id))
         conn.commit()
         conn.close()
         flash('Pagamento marcado com sucesso!', 'success')
@@ -302,7 +306,7 @@ def marcar_pago(id):
 @app.route('/fechamento')
 def fechamento():
     hoje = date.today().strftime('%d/%m/%Y')
-    hoje_db = date.today().strftime('%Y-%m-%d')
+    hoje_db = date.today().strftime('%d-%m-%Y')
     resumo_posto1 = sistema.resumo_dia(hoje_db, 1)
     resumo_posto2 = sistema.resumo_dia(hoje_db, 2)
     postagens_posto1 = sistema.listar_postagens_dia(hoje_db, 1)
