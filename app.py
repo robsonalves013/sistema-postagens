@@ -17,10 +17,10 @@ def datetimeformat(value, format='%d %m %Y'):
         return ''
     if isinstance(value, str):
         try:
-            dt = datetime.strptime(value, '%Y-%m-%d')
+            dt = datetime.strptime(value, '%d-%m-%Y')
         except:
             try:
-                dt = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                dt = datetime.strptime(value, '%d-%m-%Y %H:%M:%S')
             except:
                 return value
     elif isinstance(value, (datetime, date)):
@@ -224,7 +224,7 @@ sistema.criar_tabelas()
 @app.route('/')
 def index():
     hoje = date.today().strftime('%d %m %Y')
-    hoje_db = date.today().strftime('%Y-%m-%d')
+    hoje_db = date.today().strftime('%d-%m-%Y')
     postagens_hoje = sistema.listar_postagens_dia(hoje_db)
     resumo_posto1 = sistema.resumo_dia(hoje_db, 1)
     resumo_posto2 = sistema.resumo_dia(hoje_db, 2)
@@ -238,7 +238,7 @@ def index():
 @app.route('/nova_postagem', methods=['GET', 'POST'])
 def nova_postagem():
     data_hoje = date.today().strftime('%d %m %Y')
-    data_hoje_db = date.today().strftime('%Y-%m-%d')
+    data_hoje_db = date.today().strftime('%d-%m-%Y')
     if request.method == 'POST':
         try:
             data_postagem = request.form['data_postagem']
@@ -318,7 +318,7 @@ def marcar_pago(id):
 @app.route('/fechamento')
 def fechamento():
     hoje = date.today().strftime('%d %m %Y')
-    hoje_db = date.today().strftime('%Y-%m-%d')
+    hoje_db = date.today().strftime('%d-%m-%Y')
     resumo_posto1 = sistema.resumo_dia(hoje_db, 1)
     resumo_posto2 = sistema.resumo_dia(hoje_db, 2)
     postagens_posto1 = sistema.listar_postagens_dia(hoje_db, 1)
