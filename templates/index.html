@@ -149,7 +149,7 @@
                             </td>
                             <td>
                                 {% if postagem[12] %}
-                                    {{ postagem[12].split()[1][:5] }}
+                                    {{ postagem[12]|datetimeformat }}
                                 {% else %}
                                     -
                                 {% endif %}
@@ -168,5 +168,4 @@
         {% endif %}
     </div>
 </div>
-
 {% endblock %}

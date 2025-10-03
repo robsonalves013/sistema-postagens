@@ -73,7 +73,7 @@
 
 <script>
   function togglePagamentoFields() {
-    const status = document.getElementById('pagamento_pago').value;
+    var status = document.getElementById('pagamento_pago').value;
     document.getElementById('tipo_pagamento_div').style.display = (status === "1") ? 'block' : 'none';
     document.getElementById('data_pagamento_div').style.display = (status === "1") ? 'block' : 'none';
   }

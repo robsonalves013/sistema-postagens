@@ -10,6 +10,25 @@ app.secret_key = 'sua_chave_secreta_aqui'
 DB_FILE = 'postagens.db'
 NOME_POSTO = {1: "Shopping_Bolivia", 2: "Hotel_Family"}
 
+# Filtro Jinja para formatar datas no padrão "%d %m %Y"
+@app.template_filter('datetimeformat')
+def datetimeformat(value, format='%d %m %Y'):
+    if value is None:
+        return ''
+    if isinstance(value, str):
+        try:
+            dt = datetime.strptime(value, '%Y-%m-%d')
+        except:
+            try:
+                dt = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            except:
+                return value
+    elif isinstance(value, (datetime, date)):
+        dt = value
+    else:
+        return value
+    return dt.strftime(format)
+
 class SistemaPostagem:
     def __init__(self, db_name=DB_FILE):
         self.db_name = db_name
@@ -164,24 +183,23 @@ class SistemaPostagem:
         finally:
             conn.close()
 
-
 def gerar_pdf_fechamento(resumo, postagens):
     pasta_base = 'Fechamento Diario'
     if not os.path.exists(pasta_base):
         os.mkdir(pasta_base)
-    pasta_data = os.path.join(pasta_base, NOME_POSTO.get(resumo['posto'], f"Posto{resumo['posto']}"), datetime.today().strftime('%d-%m-%Y'))
+    pasta_data = os.path.join(pasta_base, NOME_POSTO.get(resumo['posto'], f"Posto{resumo['posto']}"), datetime.today().strftime('%d %m %Y'))
     if not os.path.exists(pasta_data):
         os.makedirs(pasta_data)
 
     nome_posto = NOME_POSTO.get(resumo['posto'], f"Posto{resumo['posto']}")
-    nome_arquivo = os.path.join(pasta_data, f"{nome_posto}_{datetime.today().strftime('%d-%m-%Y')}.pdf")
+    nome_arquivo = os.path.join(pasta_data, f"{nome_posto}_{datetime.today().strftime('%d %m %Y')}.pdf")
 
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "Fechamento Diário dos Postos de Postagem", ln=True, align="C")
     pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 10, f"Data: {datetime.today().strftime('%d/%m/%Y')}", ln=True)
+    pdf.cell(0, 10, f"Data: {datetime.today().strftime('%d %m %Y')}", ln=True)
     pdf.ln(5)
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(0, 10, f"Resumo do Dia - {nome_posto}", ln=True)
@@ -203,11 +221,10 @@ def gerar_pdf_fechamento(resumo, postagens):
 sistema = SistemaPostagem()
 sistema.criar_tabelas()
 
-
 @app.route('/')
 def index():
-    hoje = date.today().strftime('%d/%m/%Y')
-    hoje_db = date.today().strftime('%d-%m-%Y')
+    hoje = date.today().strftime('%d %m %Y')
+    hoje_db = date.today().strftime('%Y-%m-%d')
     postagens_hoje = sistema.listar_postagens_dia(hoje_db)
     resumo_posto1 = sistema.resumo_dia(hoje_db, 1)
     resumo_posto2 = sistema.resumo_dia(hoje_db, 2)
@@ -218,11 +235,10 @@ def index():
                            data_hoje=hoje,
                            NOME_POSTO=NOME_POSTO)
 
-
 @app.route('/nova_postagem', methods=['GET', 'POST'])
 def nova_postagem():
-    data_hoje = date.today().strftime('%d/%m/%Y')
-    data_hoje_db = date.today().strftime('%d-%m-%Y')
+    data_hoje = date.today().strftime('%d %m %Y')
+    data_hoje_db = date.today().strftime('%Y-%m-%d')
     if request.method == 'POST':
         try:
             data_postagem = request.form['data_postagem']
@@ -232,12 +248,12 @@ def nova_postagem():
             valor = float(request.form['valor'])
             tipo_postagem = request.form['tipo_postagem']
             pagamento_pago = int(request.form.get('pagamento_pago', 0))
-            data_pagamento = request.form.get('data_pagamento')
-            if pagamento_pago == 0:
+            if pagamento_pago == 1:
+                data_pagamento = datetime.today().strftime('%d %m %Y')
+                tipo_pagamento = request.form.get('tipo_pagamento')
+            else:
                 data_pagamento = None
                 tipo_pagamento = None
-            else:
-                tipo_pagamento = request.form['tipo_pagamento']
             observacoes = request.form.get('observacoes')
 
             if not nome_remetente or not codigo_rastreio:
@@ -264,15 +280,12 @@ def nova_postagem():
         except Exception as e:
             flash(f'Erro inesperado: {str(e)}', 'error')
         return render_template('nova_postagem.html', data_hoje=data_hoje)
-    else:
-        return render_template('nova_postagem.html', data_hoje=data_hoje)
-
+    return render_template('nova_postagem.html', data_hoje=data_hoje)
 
 @app.route('/pendentes')
 def listar_pendentes():
     pendentes = sistema.listar_pendentes()
     return render_template('pendentes.html', pendentes=pendentes, NOME_POSTO=NOME_POSTO)
-
 
 @app.route('/marcar_pago/<int:id>', methods=['GET', 'POST'])
 def marcar_pago(id):
@@ -302,11 +315,10 @@ def marcar_pago(id):
         conn.close()
         return render_template('marcar_pago.html', postagem=postagem, NOME_POSTO=NOME_POSTO)
 
-
 @app.route('/fechamento')
 def fechamento():
-    hoje = date.today().strftime('%d/%m/%Y')
-    hoje_db = date.today().strftime('%d-%m-%Y')
+    hoje = date.today().strftime('%d %m %Y')
+    hoje_db = date.today().strftime('%Y-%m-%d')
     resumo_posto1 = sistema.resumo_dia(hoje_db, 1)
     resumo_posto2 = sistema.resumo_dia(hoje_db, 2)
     postagens_posto1 = sistema.listar_postagens_dia(hoje_db, 1)
@@ -318,7 +330,6 @@ def fechamento():
                            postagens_posto2=postagens_posto2,
                            data_hoje=hoje,
                            NOME_POSTO=NOME_POSTO)
-
 
 @app.route('/realizar_fechamento', methods=['POST'])
 def realizar_fechamento():
@@ -350,7 +361,6 @@ def realizar_fechamento():
     except Exception as e:
         flash(f'Erro no fechamento: {str(e)}', 'error')
         return redirect(url_for('fechamento'))
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
