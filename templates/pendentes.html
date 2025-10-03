@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Pagamentos Pendentes{% endblock %}
+
+{% block content %}
+<h1>Pagamentos Pendentes</h1>
+
+{% if pendentes %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Data da Postagem</th>
+            <th>Posto</th>
+            <th>Remetente</th>
+            <th>Código Rastreio</th>
+            <th>Valor</th>
+            <th>Tipo Pagamento</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in pendentes %}
+        <tr>
+            <td>{{ p[1] }}</td>
+            <td>{{ NOME_POSTO[p[2]] }}</td>
+            <td>{{ p[3] }}</td>
+            <td>{{ p[4] }}</td>
+            <td>R$ {{ "%.2f"|format(p[5]) }}</td>
+            <td>{{ p[7] }}</td>
+            <td>
+                <a href="{{ url_for('marcar_pago', id=p[0]) }}" class="btn btn-sm btn-primary">
+                    Marcar como Pago
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Nenhum pagamento pendente.</p>
+{% endif %}
+
+<a href="{{ url_for('index') }}" class="btn btn-secondary">Voltar ao Dashboard</a>
+{% endblock %}

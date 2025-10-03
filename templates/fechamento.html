@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Fechamento do Dia - Sistema de Postagens{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1><i class="bi bi-clipboard-check"></i> Fechamento do Dia</h1>
+        <p class="text-muted">Realize o fechamento diário dos postos - {{ data_hoje }}</p>
+    </div>
+</div>
+
+<!-- Resumo dos Postos -->
+<div class="row mb-4">
+    <!-- Posto 1 -->
+    <div class="col-md-6">
+        <div class="card posto-1">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="bi bi-building"></i> Shopping Bolívia - Resumo do Dia</h5>
+            </div>
+            <div class="card-body">
+                {% if resumo_posto1.total_postagens > 0 %}
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <h4 class="text-primary">{{ resumo_posto1.total_postagens }}</h4>
+                            <small class="text-muted">Postagens</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">R$ {{ "%.2f"|format(resumo_posto1.total_valor) }}</h4>
+                            <small class="text-muted">Total</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-info">{{ resumo_posto1.total_pac + resumo_posto1.total_sedex }}</h4>
+                            <small class="text-muted">Itens</small>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Por Tipo:</strong><br>
+                            <span class="badge bg-info">PAC: {{ resumo_posto1.total_pac }}</span>
+                            <span class="badge bg-warning">SEDEX: {{ resumo_posto1.total_sedex }}</span>
+                        </div>
+                        <div class="col-6">
+                            <strong>Por Pagamento:</strong><br>
+                            <span class="badge bg-success">PIX: R$ {{ "%.2f"|format(resumo_posto1.total_pix) }}</span><br>
+                            <span class="badge bg-secondary">Dinheiro: R$ {{ "%.2f"|format(resumo_posto1.total_dinheiro) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Botão de Fechamento Posto 1 -->
+                    <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#modalFechamento1">
+                        <i class="bi bi-lock"></i> Realizar Fechamento do Correio Shopping Bolívia
+                    </button>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p>Nenhuma postagem para fechar hoje</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Posto 2 -->
+    <div class="col-md-6">
+        <div class="card posto-2">
+            <div class="card-header bg-success text-white">
+                <h5><i class="bi bi-building"></i> Hotel Family - Resumo do Dia</h5>
+            </div>
+            <div class="card-body">
+                {% if resumo_posto2.total_postagens > 0 %}
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <h4 class="text-primary">{{ resumo_posto2.total_postagens }}</h4>
+                            <small class="text-muted">Postagens</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">R$ {{ "%.2f"|format(resumo_posto2.total_valor) }}</h4>
+                            <small class="text-muted">Total</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-info">{{ resumo_posto2.total_pac + resumo_posto2.total_sedex }}</h4>
+                            <small class="text-muted">Itens</small>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Por Tipo:</strong><br>
+                            <span class="badge bg-info">PAC: {{ resumo_posto2.total_pac }}</span>
+                            <span class="badge bg-warning">SEDEX: {{ resumo_posto2.total_sedex }}</span>
+                        </div>
+                        <div class="col-6">
+                            <strong>Por Pagamento:</strong><br>
+                            <span class="badge bg-success">PIX: R$ {{ "%.2f"|format(resumo_posto2.total_pix) }}</span><br>
+                            <span class="badge bg-secondary">Dinheiro: R$ {{ "%.2f"|format(resumo_posto2.total_dinheiro) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Botão de Fechamento Posto 2 -->
+                    <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#modalFechamento2">
+                        <i class="bi bi-lock"></i> Realizar Fechamento do Correio Hotel Family
+                    </button>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p>Nenhuma postagem para fechar hoje</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detalhamento das Postagens -->
+<div class="row">
+    {% if postagens_posto1 %}
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6>Postagens do Correio Shopping Bolívia ({{ postagens_posto1|length }})</h6>
+            </div>
+            <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Remetente</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Pagto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for postagem in postagens_posto1 %}
+                            <tr>
+                                <td>{{ postagem[3][:20] }}{{ '...' if postagem[3]|length > 20 else '' }}</td>
+                                <td><span class="badge bg-{{ 'info' if postagem[6] == 'PAC' else 'warning' }}">{{ postagem[6] }}</span></td>
+                                <td>R$ {{ "%.2f"|format(postagem[5]) }}</td>
+                                <td><span class="badge bg-{{ 'success' if postagem[7] == 'PIX' else 'secondary' }}">{{ postagem[7] }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if postagens_posto2 %}
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6>Postagens do Correio Hotel Family ({{ postagens_posto2|length }})</h6>
+            </div>
+            <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Remetente</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Pagto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for postagem in postagens_posto2 %}
+                            <tr>
+                                <td>{{ postagem[3][:20] }}{{ '...' if postagem[3]|length > 20 else '' }}</td>
+                                <td><span class="badge bg-{{ 'info' if postagem[6] == 'PAC' else 'warning' }}">{{ postagem[6] }}</span></td>
+                                <td>R$ {{ "%.2f"|format(postagem[5]) }}</td>
+                                <td><span class="badge bg-{{ 'success' if postagem[7] == 'PIX' else 'secondary' }}">{{ postagem[7] }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Fechamento Posto 1 -->
+<div class="modal fade" id="modalFechamento1" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Fechamento do Correio Shopping Bolívia </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/realizar_fechamento">
+                <div class="modal-body">
+                    <input type="hidden" name="data_fechamento" value="{{ data_hoje }}">
+                    <input type="hidden" name="posto" value="1">
+
+                    <div class="mb-3">
+                        <label for="funcionario1" class="form-label">Funcionário Responsável</label>
+                        <input type="text" class="form-control" id="funcionario1" name="funcionario" 
+                               placeholder="Nome do funcionário" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="observacoes1" class="form-label">Observações (opcional)</label>
+                        <textarea class="form-control" id="observacoes1" name="observacoes" rows="3"
+                                  placeholder="Observações sobre o fechamento..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Resumo:</strong><br>
+                        Total de {{ resumo_posto1.total_postagens }} postagens<br>
+                        Valor total: R$ {{ "%.2f"|format(resumo_posto1.total_valor) }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Fechamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Fechamento Posto 2 -->
+<div class="modal fade" id="modalFechamento2" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Fechamento do Correio Hotel Family </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/realizar_fechamento">
+                <div class="modal-body">
+                    <input type="hidden" name="data_fechamento" value="{{ data_hoje }}">
+                    <input type="hidden" name="posto" value="2">
+
+                    <div class="mb-3">
+                        <label for="funcionario2" class="form-label">Funcionário Responsável</label>
+                        <input type="text" class="form-control" id="funcionario2" name="funcionario" 
+                               placeholder="Nome do funcionário" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="observacoes2" class="form-label">Observações (opcional)</label>
+                        <textarea class="form-control" id="observacoes2" name="observacoes" rows="3"
+                                  placeholder="Observações sobre o fechamento..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Resumo:</strong><br>
+                        Total de {{ resumo_posto2.total_postagens }} postagens<br>
+                        Valor total: R$ {{ "%.2f"|format(resumo_posto2.total_valor) }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar Fechamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-4">
+    <a href="/" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+    </a>
+</div>
+{% endblock %}

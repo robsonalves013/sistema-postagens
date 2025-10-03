@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Postagem - Sistema de Postagens{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="bi bi-plus-circle"></i> Nova Postagem</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="formPostagem">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="data_postagem" class="form-label">
+                                    <i class="bi bi-calendar"></i> Data da Postagem
+                                </label>
+                                <input type="date" class="form-control" id="data_postagem" 
+                                       name="data_postagem" value="{{ data_hoje }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="posto" class="form-label">
+                                    <i class="bi bi-building"></i> Posto
+                                </label>
+                                <select class="form-select" id="posto" name="posto" required>
+                                    <option value="">Selecione o posto...</option>
+                                    <option value="1">Shopping Bolívia</option>
+                                    <option value="2">Hotel Family</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="nome_remetente" class="form-label">
+                            <i class="bi bi-person"></i> Nome do Remetente
+                        </label>
+                        <input type="text" class="form-control" id="nome_remetente" 
+                               name="nome_remetente" placeholder="Digite o nome completo do remetente" 
+                               required maxlength="200">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="codigo_rastreio" class="form-label">
+                            <i class="bi bi-qr-code"></i> Código de Rastreio
+                        </label>
+                        <input type="text" class="form-control" id="codigo_rastreio" 
+                               name="codigo_rastreio" placeholder="Ex: AA123456789BR" 
+                               required maxlength="13" style="font-family: monospace;">
+                        <div class="form-text">Código de 13 caracteres fornecido pelos Correios</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="valor" class="form-label">
+                                    <i class="bi bi-currency-dollar"></i> Valor (R$)
+                                </label>
+                                <input type="number" class="form-control" id="valor" name="valor" 
+                                       step="0.01" min="0.01" placeholder="0,00" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="tipo_postagem" class="form-label">
+                                    <i class="bi bi-truck"></i> Tipo de Postagem
+                                </label>
+                                <select class="form-select" id="tipo_postagem" name="tipo_postagem" required>
+                                    <option value="">Selecione o tipo...</option>
+                                    <option value="PAC">PAC</option>
+                                    <option value="SEDEX">SEDEX</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="tipo_pagamento" class="form-label">
+                            <i class="bi bi-credit-card"></i> Forma de Pagamento
+                        </label>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="tipo_pagamento" 
+                                           id="pix" value="PIX" required>
+                                    <label class="form-check-label" for="pix">
+                                        <i class="bi bi-phone"></i> PIX
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="tipo_pagamento" 
+                                           id="dinheiro" value="DINHEIRO" required>
+                                    <label class="form-check-label" for="dinheiro">
+                                        <i class="bi bi-cash"></i> Dinheiro
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Registrar Postagem
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Definir data de hoje como padrão
+    const hoje = new Date().toISOString().split('T')[0];
+    document.getElementById('data_postagem').value = hoje;
+
+    // Formatar código de rastreio em maiúsculo
+    document.getElementById('codigo_rastreio').addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+    });
+
+    // Validação do formulário
+    document.getElementById('formPostagem').addEventListener('submit', function(e) {
+        const codigo = document.getElementById('codigo_rastreio').value;
+        const valor = document.getElementById('valor').value;
+
+        if (codigo.length !== 13) {
+            e.preventDefault();
+            alert('Código de rastreio deve ter exatamente 13 caracteres');
+            return false;
+        }
+
+        if (parseFloat(valor) <= 0) {
+            e.preventDefault();
+            alert('Valor deve ser maior que zero');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}
