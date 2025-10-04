@@ -385,13 +385,16 @@ def relatorio_mensal():
             'total_pix': resumo[4],
             'total_dinheiro': resumo[5]
         }
+        # Passe NOME_POSTO para o template para evitar erro no Jinja
         return render_template('relatorio_mensal_resultado.html',
                                postagens=postagens,
                                resumo=resumo_dict,
                                mes=mes,
-                               ano=ano)
+                               ano=ano,
+                               NOME_POSTO=NOME_POSTO)
     else:
-        return render_template('relatorio_mensal.html', current_year=datetime.now().year)
+        return render_template('relatorio_mensal.html', current_year=current_year)
+
 
 @app.route('/relatorio_mensal/pdf/<int:mes>/<int:ano>')
 def gerar_pdf_relatorio_mensal(mes, ano):
@@ -443,11 +446,6 @@ def gerar_pdf_relatorio_mensal(mes, ano):
         pdf.ln()
     pdf.output(nome_pdf)
     return send_file(nome_pdf, as_attachment=True)
-
-
-@app.route('/teste_template')
-def teste_template():
-    return render_template('relatorio_mensal.html', current_year=2025)
 
 
 if __name__ == '__main__':
