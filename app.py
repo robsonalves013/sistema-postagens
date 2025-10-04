@@ -3,17 +3,14 @@ import sqlite3
 import os
 from datetime import datetime, date
 from fpdf import FPDF
-
+from calendar import monthrange
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
 
-
 DB_FILE = 'postagens.db'
 NOME_POSTO = {1: "Shopping_Bolivia", 2: "Hotel_Family"}
 
-
-# Filtro Jinja para formatar datas no padrão "%d %m %Y"
 @app.template_filter('datetimeformat')
 def datetimeformat(value, format='%d %m %Y'):
     if value is None:
@@ -32,15 +29,12 @@ def datetimeformat(value, format='%d %m %Y'):
         return value
     return dt.strftime(format)
 
-
 class SistemaPostagem:
     def __init__(self, db_name=DB_FILE):
         self.db_name = db_name
 
-
     def conectar(self):
         return sqlite3.connect(self.db_name)
-
 
     def criar_tabelas(self):
         conn = self.conectar()
@@ -82,7 +76,6 @@ class SistemaPostagem:
         conn.commit()
         conn.close()
 
-
     def adicionar_postagem(self, data_postagem, posto, nome_remetente, codigo_rastreio,
                            valor, tipo_postagem, tipo_pagamento=None, pagamento_pago=0, data_pagamento=None, observacoes=None):
         conn = self.conectar()
@@ -103,7 +96,6 @@ class SistemaPostagem:
             return False
         finally:
             conn.close()
-
 
     def listar_postagens_dia(self, data, posto=None):
         conn = self.conectar()
@@ -128,7 +120,6 @@ class SistemaPostagem:
         conn.close()
         return postagens
 
-
     def listar_pendentes(self):
         conn = self.conectar()
         cursor = conn.cursor()
@@ -142,7 +133,6 @@ class SistemaPostagem:
         pendentes = cursor.fetchall()
         conn.close()
         return pendentes
-
 
     def resumo_dia(self, data, posto):
         conn = self.conectar()
@@ -170,7 +160,6 @@ class SistemaPostagem:
             'posto': posto
         }
 
-
     def realizar_fechamento(self, data, posto, funcionario, observacoes=""):
         resumo = self.resumo_dia(data, posto)
         if resumo['total_postagens'] == 0:
@@ -194,48 +183,40 @@ class SistemaPostagem:
         finally:
             conn.close()
 
+    def listar_postagens_mes(self, primeiro_dia, ultimo_dia):
+        conn = self.conectar()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, data_postagem, posto, nome_remetente, codigo_rastreio,
+                   valor, tipo_postagem, tipo_pagamento, status, pagamento_pago, data_pagamento, observacoes, data_criacao
+            FROM postagens
+            WHERE data_postagem BETWEEN ? AND ?
+            ORDER BY data_postagem ASC
+        """, (primeiro_dia, ultimo_dia))
+        postagens = cursor.fetchall()
+        conn.close()
+        return postagens
 
-def gerar_pdf_fechamento(resumo, postagens):
-    pasta_base = 'Fechamento Diario'
-    if not os.path.exists(pasta_base):
-        os.mkdir(pasta_base)
-    pasta_data = os.path.join(pasta_base, NOME_POSTO.get(resumo['posto'], f"Posto{resumo['posto']}"), datetime.today().strftime('%d %m %Y'))
-    if not os.path.exists(pasta_data):
-        os.makedirs(pasta_data)
-
-
-    nome_posto = NOME_POSTO.get(resumo['posto'], f"Posto{resumo['posto']}")
-    nome_arquivo = os.path.join(pasta_data, f"{nome_posto}_{datetime.today().strftime('%d %m %Y')}.pdf")
-
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "Fechamento Diário dos Postos de Postagem", ln=True, align="C")
-    pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 10, f"Data: {datetime.today().strftime('%d %m %Y')}", ln=True)
-    pdf.ln(5)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, f"Resumo do Dia - {nome_posto}", ln=True)
-    pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 10, f"Total de Postagens: {resumo['total_postagens']}", ln=True)
-    pdf.cell(0, 10, f"Valor Total: R$ {resumo['total_valor']:.2f}", ln=True)
-    pdf.cell(0, 10, f"PAC: {resumo['total_pac']}  |  SEDEX: {resumo['total_sedex']}", ln=True)
-    pdf.cell(0, 10, f"PIX: R$ {resumo['total_pix']:.2f}  |  Dinheiro: R$ {resumo['total_dinheiro']:.2f}", ln=True)
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "Lista de Postagens:", ln=True)
-    pdf.set_font("Arial", '', 11)
-    for p in postagens:
-        pdf.cell(0, 9, f"- {p[3]} ({p[4]}) - R$ {p[5]:.2f} - {p[6]}/{p[7]}", ln=True)
-    pdf.output(nome_arquivo)
-    return nome_arquivo
-
-
+    def resumo_mes(self, primeiro_dia, ultimo_dia):
+        conn = self.conectar()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                COUNT(*),
+                COALESCE(SUM(valor), 0),
+                SUM(CASE WHEN tipo_postagem = 'PAC' THEN 1 ELSE 0 END),
+                SUM(CASE WHEN tipo_postagem = 'SEDEX' THEN 1 ELSE 0 END),
+                COALESCE(SUM(CASE WHEN tipo_pagamento = 'PIX' THEN valor ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN tipo_pagamento = 'DINHEIRO' THEN valor ELSE 0 END), 0)
+            FROM postagens
+            WHERE data_postagem BETWEEN ? AND ?
+        """, (primeiro_dia, ultimo_dia))
+        resumo = cursor.fetchone()
+        conn.close()
+        return resumo
 
 sistema = SistemaPostagem()
 sistema.criar_tabelas()
-
 
 @app.route('/')
 def index():
@@ -250,7 +231,6 @@ def index():
                            resumo_posto2=resumo_posto2,
                            data_hoje=hoje,
                            NOME_POSTO=NOME_POSTO)
-
 
 @app.route('/nova_postagem', methods=['GET', 'POST'])
 def nova_postagem():
@@ -273,7 +253,6 @@ def nova_postagem():
                 tipo_pagamento = None
             observacoes = request.form.get('observacoes')
 
-
             if not nome_remetente or not codigo_rastreio:
                 flash('Nome do remetente e código de rastreio são obrigatórios!', 'error')
                 return render_template('nova_postagem.html', data_hoje=data_hoje)
@@ -283,7 +262,6 @@ def nova_postagem():
             if posto not in [1, 2]:
                 flash('Posto deve ser Shopping Bolivia ou Hotel Family!', 'error')
                 return render_template('nova_postagem.html', data_hoje=data_hoje)
-
 
             sucesso = sistema.adicionar_postagem(
                 data_postagem, posto, nome_remetente, codigo_rastreio,
@@ -301,12 +279,10 @@ def nova_postagem():
         return render_template('nova_postagem.html', data_hoje=data_hoje)
     return render_template('nova_postagem.html', data_hoje=data_hoje)
 
-
 @app.route('/pendentes')
 def listar_pendentes():
     pendentes = sistema.listar_pendentes()
     return render_template('pendentes.html', pendentes=pendentes, NOME_POSTO=NOME_POSTO)
-
 
 @app.route('/marcar_pago/<int:id>', methods=['GET', 'POST'])
 def marcar_pago(id):
@@ -336,7 +312,6 @@ def marcar_pago(id):
         conn.close()
         return render_template('marcar_pago.html', postagem=postagem, NOME_POSTO=NOME_POSTO)
 
-
 @app.route('/fechamento')
 def fechamento():
     hoje = date.today().strftime('%d %m %Y')
@@ -353,7 +328,6 @@ def fechamento():
                            data_hoje=hoje,
                            NOME_POSTO=NOME_POSTO)
 
-
 @app.route('/realizar_fechamento', methods=['POST'])
 def realizar_fechamento():
     try:
@@ -364,7 +338,6 @@ def realizar_fechamento():
         if not funcionario:
             flash('Nome do funcionário é obrigatório!', 'error')
             return redirect(url_for('fechamento'))
-
         try:
             data_fechamento = datetime.strptime(data_fechamento_raw, '%d %m %Y').strftime('%Y-%m-%d')
         except:
@@ -390,6 +363,91 @@ def realizar_fechamento():
     except Exception as e:
         flash(f'Erro no fechamento: {str(e)}', 'error')
         return redirect(url_for('fechamento'))
+
+@app.route('/relatorio_mensal', methods=['GET', 'POST'])
+def relatorio_mensal():
+    current_year = datetime.now().year
+    if request.method == 'POST':
+        mes = int(request.form['mes'])
+        ano = int(request.form['ano'])
+
+        primeiro_dia = f"{ano}-{mes:02d}-01"
+        ultimo_dia_num = monthrange(ano, mes)[1]
+        ultimo_dia = f"{ano}-{mes:02d}-{ultimo_dia_num:02d}"
+
+        postagens = sistema.listar_postagens_mes(primeiro_dia, ultimo_dia)
+        resumo = sistema.resumo_mes(primeiro_dia, ultimo_dia)
+        resumo_dict = {
+            'total_postagens': resumo[0],
+            'total_valor': resumo[1],
+            'total_pac': resumo[2],
+            'total_sedex': resumo[3],
+            'total_pix': resumo[4],
+            'total_dinheiro': resumo[5]
+        }
+        return render_template('relatorio_mensal_resultado.html',
+                               postagens=postagens,
+                               resumo=resumo_dict,
+                               mes=mes,
+                               ano=ano)
+    else:
+        return render_template('relatorio_mensal.html', current_year=datetime.now().year)
+
+@app.route('/relatorio_mensal/pdf/<int:mes>/<int:ano>')
+def gerar_pdf_relatorio_mensal(mes, ano):
+    primeiro_dia = f"{ano}-{mes:02d}-01"
+    ultimo_dia_num = monthrange(ano, mes)[1]
+    ultimo_dia = f"{ano}-{mes:02d}-{ultimo_dia_num:02d}"
+
+    postagens = sistema.listar_postagens_mes(primeiro_dia, ultimo_dia)
+    resumo = sistema.resumo_mes(primeiro_dia, ultimo_dia)
+    resumo_dict = {
+        'total_postagens': resumo[0],
+        'total_valor': resumo[1],
+        'total_pac': resumo[2],
+        'total_sedex': resumo[3],
+        'total_pix': resumo[4],
+        'total_dinheiro': resumo[5]
+    }
+
+    nome_pdf = f'relatorio_mensal_{ano}_{mes:02d}.pdf'
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, f"Relatório Mensal - {mes:02d}/{ano}", ln=True, align="C")
+    pdf.set_font("Arial", '', 12)
+    pdf.ln(6)
+    pdf.cell(0, 8, f"Total de Postagens: {resumo_dict['total_postagens']}", ln=True)
+    pdf.cell(0, 8, f"Valor Total: R$ {resumo_dict['total_valor']:.2f}", ln=True)
+    pdf.cell(0, 8, f"PAC: {resumo_dict['total_pac']}  SEDEX: {resumo_dict['total_sedex']}", ln=True)
+    pdf.cell(0, 8, f"PIX: R$ {resumo_dict['total_pix']:.2f}  Dinheiro: R$ {resumo_dict['total_dinheiro']:.2f}", ln=True)
+    pdf.ln(8)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(25, 8, "Data", 1)
+    pdf.cell(30, 8, "Posto", 1)
+    pdf.cell(35, 8, "Remetente", 1)
+    pdf.cell(35, 8, "Cód.Rastreio", 1)
+    pdf.cell(20, 8, "Valor", 1)
+    pdf.cell(15, 8, "Tipo", 1)
+    pdf.cell(25, 8, "Pagamento", 1)
+    pdf.ln()
+    pdf.set_font("Arial", '', 9)
+    for p in postagens:
+        pdf.cell(25, 8, p[1] or 'Pendente', 1)
+        pdf.cell(30, 8, NOME_POSTO.get(p[2], str(p[2])), 1)
+        pdf.cell(35, 8, (p[3] or 'Pendente')[:20], 1)
+        pdf.cell(35, 8, p[4] or '', 1)
+        pdf.cell(20, 8, f"R$ {p[5]:.2f}", 1)
+        pdf.cell(15, 8, p[6] or 'Pendente', 1)
+        pdf.cell(25, 8, (p[7] or 'Pendente'), 1)
+        pdf.ln()
+    pdf.output(nome_pdf)
+    return send_file(nome_pdf, as_attachment=True)
+
+
+@app.route('/teste_template')
+def teste_template():
+    return render_template('relatorio_mensal.html', current_year=2025)
 
 
 if __name__ == '__main__':

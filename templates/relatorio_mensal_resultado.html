@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Relatório Mensal - Resultado{% endblock %}
+{% block content %}
+<h2>Relatório Mensal - {{ mes }}/{{ ano }}</h2>
+
+<a href="{{ url_for('gerar_pdf_relatorio_mensal', mes=mes, ano=ano) }}" target="_blank" class="btn btn-danger mb-3">
+  <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+</a>
+
+<h4>Resumo Geral</h4>
+<ul>
+  <li>Total de Postagens: {{ resumo.total_postagens }}</li>
+  <li>Valor Total: R$ {{ '%.2f'|format(resumo.total_valor) }}</li>
+  <li>PAC: {{ resumo.total_pac }}</li>
+  <li>SEDEX: {{ resumo.total_sedex }}</li>
+  <li>PIX: R$ {{ '%.2f'|format(resumo.total_pix) }}</li>
+  <li>Dinheiro: R$ {{ '%.2f'|format(resumo.total_dinheiro) }}</li>
+</ul>
+
+<h4>Lista de Postagens</h4>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Data</th>
+      <th>Posto</th>
+      <th>Remetente</th>
+      <th>Código</th>
+      <th>Valor</th>
+      <th>Tipo</th>
+      <th>Pagamento</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in postagens %}
+    <tr>
+      <td>{{ p[1]|datetimeformat }}</td>
+      <td>{{ NOME_POSTO[p[2]] }}</td>
+      <td>{{ p[3] }}</td>
+      <td>{{ p[4] }}</td>
+      <td>R$ {{ '%.2f'|format(p[5]) }}</td>
+      <td>{{ p[6] }}</td>
+      <td>{{ p[7] or 'Pendente' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{{ url_for('relatorio_mensal') }}" class="btn btn-secondary mt-3">Voltar</a>
+
+{% endblock %}
