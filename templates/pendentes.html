@@ -1,37 +1,39 @@
 {% extends "base.html" %}
-
 {% block title %}Pagamentos Pendentes{% endblock %}
-
 {% block content %}
-<h1>Pagamentos Pendentes ⚠️</h1>
+<h2>Pagamentos Pendentes</h2>
 
 {% if pendentes %}
+<div class="table-responsive">
 <table class="table table-striped">
-  <thead>
+<thead>
     <tr>
-      <th>Data Postagem</th>
-      <th>Posto</th>
-      <th>Remetente</th>
-      <th>Código</th>
-      <th>Valor</th>
-      <th>Forma Pagamento</th>
-      <th>Ações</th>
+        <th>Data Postagem</th>
+        <th>Posto</th>
+        <th>Remetente</th>
+        <th>Código</th>
+        <th>Valor</th>
+        <th>Forma Pagamento</th>
+        <th>Ações</th>
     </tr>
-  </thead>
-  <tbody>
+</thead>
+<tbody>
     {% for p in pendentes %}
     <tr>
-      <td>{{ p[1] | datetimeformat }}</td>
-      <td>{{ NOME_POSTO[p[2]] }}</td>
-      <td>{{ p[3] }}</td>
-      <td>{{ p[4] }}</td>
-      <td>R$ {{ '%.2f'|format(p[5]) }}</td>
-      <td>{{ p[10] or 'Pendente' }}</td>
-      <td><a href="{{ url_for('marcar_pago', id=p[0]) }}" class="btn btn-sm btn-success">Marcar Pago</a></td>
+        <td>{{ p[1]|datetimeformat or 'Pendente' }}</td>
+        <td>{{ NOME_POSTO[p[2]] }}</td>
+        <td>{{ p[3] }}</td>
+        <td>{{ p[4] }}</td>
+        <td>R$ {{ '%.2f'|format(p[5]) }}</td>
+        <td>{{ p[7] or 'Pendente' }}</td>
+        <td>
+            <a href="{{ url_for('marcar_pago', id=p[0]) }}" class="btn btn-sm btn-success">Marcar Pago</a>
+        </td>
     </tr>
     {% endfor %}
-  </tbody>
+</tbody>
 </table>
+</div>
 {% else %}
 <p>Nenhum pagamento pendente.</p>
 {% endif %}

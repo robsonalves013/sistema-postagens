@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}Sistema de Postagens  - Foguete Express 🚀{% endblock %}</title>
+    <title>{% block title %}Sistema de Postagens - Foguete Express 🚀{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
     <style>
@@ -16,22 +16,28 @@
         .card {
             border: none;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
         }
-        .card:hover {
-            transform: translateY(-5px);
+        .btn-primary, .btn-success, .btn-warning, .btn-info {
+            min-height: 44px;
+            font-size: 1rem;
+            border: none;
+            padding: 0.5rem 1rem;
         }
         .btn-primary {
             background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
+            color: white;
         }
         .btn-success {
             background: linear-gradient(135deg, #11998e, #38ef7d);
-            border: none;
+            color: white;
         }
         .btn-warning {
             background: linear-gradient(135deg, #f093fb, #f5576c);
-            border: none;
+            color: white;
+        }
+        .btn-info {
+            background: linear-gradient(135deg, #2193b0, #6dd5ed);
+            color: white;
         }
         .stats-card {
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -46,12 +52,16 @@
         .alert {
             border-radius: 10px;
         }
+        body, label, input, select, button, textarea {
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
+        <div class="container-fluid">
             <a class="navbar-brand" href="/">
                 <i class="bi bi-mailbox"></i> Sistema de Postagens - Foguete Express 🚀
             </a>
@@ -60,29 +70,18 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/"><i class="bi bi-house"></i> Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/nova_postagem"><i class="bi bi-plus-circle"></i> Nova Postagem</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/fechamento"><i class="bi bi-clipboard-check"></i> Fechamento</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('relatorio_mensal') }}"><i class="bi bi-bar-chart"></i> Relatório Mensal</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('listar_pendentes') }}">Pagamentos Pendentes</a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/nova_postagem"><i class="bi bi-plus-circle"></i> Nova Postagem</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/fechamento"><i class="bi bi-clipboard-check"></i> Fechamento</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('relatorio_mensal') }}"><i class="bi bi-bar-chart"></i> Relatório Mensal</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_pendentes') }}">Pagamentos Pendentes</a></li>
                 </ul>
             </div>
         </div>
     </nav>
 
     <!-- Content -->
-    <div class="container mt-4">
-        <!-- Flash Messages -->
+    <div class="container-fluid mt-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -94,13 +93,12 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-
         {% block content %}{% endblock %}
     </div>
 
     <!-- Footer -->
     <footer class="bg-dark text-light text-center mt-5 py-3">
-        <div class="container">
+        <div class="container-fluid">
             <p>&copy; 2025 Sistema de Postagens Foguete Express - RobTech Service ©</p>
         </div>
     </footer>

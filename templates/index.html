@@ -3,7 +3,7 @@
 {% block title %}Dashboard - Sistema de Postagens Foguete Express 🚀{% endblock %}
 
 {% block content %}
-<div class="row">
+<div class="row mb-3">
     <div class="col-12">
         <h1><i class="bi bi-speedometer2"></i> Dashboard - {{ data_hoje }}</h1>
         <p class="text-muted">Controle diário dos dois postos de postagem</p>
@@ -11,11 +11,34 @@
 </div>
 
 <div class="row mb-4">
+    <div class="col-12 col-sm-6 col-md-3 mb-2">
+        <a href="/nova_postagem" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-plus-circle"></i> Nova Postagem
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-md-3 mb-2">
+        <a href="/fechamento" class="btn btn-success btn-lg w-100">
+            <i class="bi bi-clipboard-check"></i> Fechamento do Dia
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-md-3 mb-2">
+        <a href="{{ url_for('relatorio_mensal') }}" class="btn btn-info btn-lg w-100">
+            <i class="bi bi-bar-chart"></i> Gerar Relatório Mensal
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-md-3 mb-2">
+        <button class="btn btn-warning btn-lg w-100" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimir Relatório
+        </button>
+    </div>
+</div>
+
+<div class="row">
     <div class="col-md-6">
-        <div class="card stats-card posto-1">
+        <div class="card stats-card posto-1 mb-3">
             <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-building"></i> Shopping Bolívia</h5>
-                <div class="row">
+                <div class="row mb-3">
                     <div class="col-6">
                         <h3>{{ resumo_posto1.total_postagens }}</h3>
                         <small>Total de Postagens</small>
@@ -49,10 +72,10 @@
     </div>
 
     <div class="col-md-6">
-        <div class="card stats-card posto-2">
+        <div class="card stats-card posto-2 mb-3">
             <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-building"></i> Hotel Family</h5>
-                <div class="row">
+                <div class="row mb-3">
                     <div class="col-6">
                         <h3>{{ resumo_posto2.total_postagens }}</h3>
                         <small>Total de Postagens</small>
@@ -86,89 +109,47 @@
     </div>
 </div>
 
-<!-- Ações Rápidas -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <a href="/nova_postagem" class="btn btn-primary btn-lg w-100">
-            <i class="bi bi-plus-circle"></i> Nova Postagem
-        </a>
-    </div>
-    <div class="col-md-4">
-        <a href="/fechamento" class="btn btn-success btn-lg w-100">
-            <i class="bi bi-clipboard-check"></i> Fechamento do Dia
-        </a>
-    </div>
-    <div class="col-md-4">
-        <button class="btn btn-warning btn-lg w-100" onclick="window.print()">
-            <i class="bi bi-printer"></i> Imprimir Relatório
-        </button>
-    </div>
-    <div class="col-md-4">
-    <a href="{{ url_for('relatorio_mensal') }}" class="btn btn-info btn-lg w-100">
-        <i class="bi bi-bar-chart"></i> Gerar Relatório Mensal
-    </a>
-</div>
-</div>
-
 <!-- Lista de Postagens do Dia -->
-<div class="card">
+<div class="card mb-4">
     <div class="card-header">
         <h5><i class="bi bi-list-ul"></i> Postagens de Hoje ({{ postagens|length }})</h5>
     </div>
     <div class="card-body">
         {% if postagens %}
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Posto</th>
-                            <th>Remetente</th>
-                            <th>Código Rastreio</th>
-                            <th>Tipo</th>
-                            <th>Valor</th>
-                            <th>Pagamento</th>
-                            <th>Data Pagamento</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for postagem in postagens %}
-                        <tr>
-                            <td>
-                                <span class="badge bg-{{ 'primary' if postagem[2] == 1 else 'success' }}">
-                                    {{ NOME_POSTO[postagem[2]] }}
-                                </span>
-                            </td>
-                            <td>{{ postagem[3] }}</td>
-                            <td><code>{{ postagem[4] }}</code></td>
-                            <td>
-                                <span class="badge bg-{{ 'info' if postagem[6] == 'PAC' else 'warning' }}">
-                                    {{ postagem[6] }}
-                                </span>
-                            </td>
-                            <td>R$ {{ "%.2f"|format(postagem[5]) }}</td>
-                            <td>
-                                <span class="badge bg-{{ 'success' if postagem[7] == 'PIX' else 'secondary' }}">
-                                    {{ postagem[7] or 'Pendente' }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if postagem[10] %}
-                                    {{ postagem[10] | datetimeformat }}
-                                {% else %}
-                                    Pendente
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Posto</th>
+                        <th>Remetente</th>
+                        <th>Código Rastreio</th>
+                        <th>Tipo</th>
+                        <th>Valor</th>
+                        <th>Pagamento</th>
+                        <th>Data Pagamento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for postagem in postagens %}
+                    <tr>
+                        <td><span class="badge bg-{{ 'primary' if postagem[2] == 1 else 'success' }}">{{ NOME_POSTO[postagem[2]] }}</span></td>
+                        <td>{{ postagem[3] }}</td>
+                        <td><code>{{ postagem[4] }}</code></td>
+                        <td><span class="badge bg-{{ 'info' if postagem[6] == 'PAC' else 'warning' }}">{{ postagem[6] }}</span></td>
+                        <td>R$ {{ "%.2f"|format(postagem[5]) }}</td>
+                        <td><span class="badge bg-{{ 'success' if postagem[7] == 'PIX' else 'secondary' }}">{{ postagem[7] or 'Pendente' }}</span></td>
+                        <td>{% if postagem[10] %}{{ postagem[10] | datetimeformat }}{% else %}Pendente{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody> 
+            </table>
+        </div>
         {% else %}
-            <div class="text-center text-muted py-4">
-                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                <p class="mt-2">Nenhuma postagem registrada hoje</p>
-                <a href="/nova_postagem" class="btn btn-primary">Registrar Primeira Postagem</a>
-            </div>
+        <div class="text-center text-muted py-4">
+            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+            <p class="mt-2">Nenhuma postagem registrada hoje</p>
+            <a href="/nova_postagem" class="btn btn-primary">Registrar Primeira Postagem</a>
+        </div>
         {% endif %}
     </div>
 </div>
