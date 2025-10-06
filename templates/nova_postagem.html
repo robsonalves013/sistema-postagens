@@ -1,83 +1,54 @@
 {% extends "base.html" %}
-
-{% block title %}Nova Postagem {% endblock %}
-
+{% block title %}Nova Postagem{% endblock %}
 {% block content %}
-<h1>Nova Postagem 📦</h1>
+<h2>Adicionar Nova Postagem</h2>
 <form method="POST">
   <div class="mb-3">
-    <label>Data da Postagem</label>
-    <input type="date" name="data_postagem" class="form-control" value="{{ data_hoje }}" required>
+    <label class="form-label">Data</label>
+    <input type="date" name="data_postagem" class="form-control" value="{{ data_hoje|datetimeformat('%Y-%m-%d') }}" required>
   </div>
-
   <div class="mb-3">
-    <label>Posto</label>
+    <label class="form-label">Posto</label>
     <select name="posto" class="form-select" required>
       <option value="1">Shopping Bolívia</option>
       <option value="2">Hotel Family</option>
     </select>
   </div>
-
   <div class="mb-3">
-    <label>Nome do Remetente</label>
+    <label class="form-label">Remetente</label>
     <input type="text" name="nome_remetente" class="form-control" required>
   </div>
-
   <div class="mb-3">
-    <label>Código de Rastreio</label>
+    <label class="form-label">Código Rastreamento</label>
     <input type="text" name="codigo_rastreio" class="form-control" required>
   </div>
-
   <div class="mb-3">
-    <label>Valor</label>
+    <label class="form-label">Valor</label>
     <input type="number" step="0.01" name="valor" class="form-control" required>
   </div>
-
   <div class="mb-3">
-    <label>Tipo de Postagem</label>
+    <label class="form-label">Tipo Postagem</label>
     <select name="tipo_postagem" class="form-select" required>
       <option value="PAC">PAC</option>
       <option value="SEDEX">SEDEX</option>
     </select>
   </div>
-
-  <div class="mb-3">
-    <label>Status do Pagamento</label>
-    <select name="pagamento_pago" id="pagamento_pago" class="form-select" onchange="togglePagamentoFields()">
-      <option value="1">Pago</option>
-      <option value="0" selected>Pendente</option>
-    </select>
+  <div class="form-check mb-3">
+    <input type="checkbox" name="pagamento_pago" id="pagamento_pago" class="form-check-input">
+    <label for="pagamento_pago" class="form-check-label">Pagamento Pago?</label>
   </div>
-
-  <div class="mb-3" id="tipo_pagamento_div" style="display:none;">
-    <label>Forma de Pagamento</label>
+  <div class="mb-3">
+    <label class="form-label">Tipo de Pagamento</label>
     <select name="tipo_pagamento" class="form-select">
+      <option value="">Selecione</option>
       <option value="PIX">PIX</option>
       <option value="DINHEIRO">Dinheiro</option>
     </select>
   </div>
-
-  <div class="mb-3" id="data_pagamento_div" style="display:none;">
-    <label>Data do Pagamento</label>
-    <input type="date" name="data_pagamento" class="form-control" />
-  </div>
-
   <div class="mb-3">
-    <label>Observações</label>
+    <label class="form-label">Observações</label>
     <textarea name="observacoes" class="form-control" rows="3"></textarea>
   </div>
-
-  <button type="submit" class="btn btn-primary">Salvar Postagem</button>
-  <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+  <button class="btn btn-primary">Adicionar</button>
 </form>
-
-<script>
-  function togglePagamentoFields() {
-    var status = document.getElementById('pagamento_pago').value;
-    document.getElementById('tipo_pagamento_div').style.display = (status === "1") ? 'block' : 'none';
-    document.getElementById('data_pagamento_div').style.display = (status === "1") ? 'block' : 'none';
-  }
-  window.onload = togglePagamentoFields;
-</script>
-
 {% endblock %}

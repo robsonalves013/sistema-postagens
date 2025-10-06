@@ -3,34 +3,26 @@
 {% block content %}
 <h2>Marcar Pagamento como Pago</h2>
 <form method="POST">
-  <div class="mb-3">
-    <label>Remetente</label>
-    <input class="form-control" value="{{ postagem[3] }}" readonly>
+  <div class="mb-3"><label class="form-label">Remetente</label>
+    <input class="form-control" value="{{ postagem.nome_remetente }}" readonly>
+  </div>
+  <div class="mb-3"><label class="form-label">Código</label>
+    <input class="form-control" value="{{ postagem.codigo_rastreio }}" readonly>
+  </div>
+  <div class="mb-3"><label class="form-label">Data Pagamento</label>
+    <input type="date" name="data_pagamento" class="form-control" required>
   </div>
   <div class="mb-3">
-    <label>Código</label>
-    <input class="form-control" value="{{ postagem[4] }}" readonly>
-  </div>
-  <div class="mb-3">
-    <label>Valor</label>
-    <input class="form-control" value="R$ {{ '%.2f'|format(postagem[5]) }}" readonly>
-  </div>
-  <div class="mb-3">
-    <label>Data do Pagamento</label>
-    <input type="date" name="data_pagamento" class="form-control" value="{{ postagem[10] or '' }}" required>
-  </div>
-  <div class="mb-3">
-    <label>Forma de Pagamento</label>
+    <label class="form-label">Forma Pagamento</label>
     <select name="tipo_pagamento" class="form-select" required>
-      <option value="PIX" {% if postagem[7] == 'PIX' %}selected{% endif %}>PIX</option>
-      <option value="DINHEIRO" {% if postagem[7] == 'DINHEIRO' %}selected{% endif %}>Dinheiro</option>
+      <option value="PIX">PIX</option>
+      <option value="DINHEIRO">Dinheiro</option>
     </select>
   </div>
-  <div class="mb-3">
-    <label>Observações</label>
-    <textarea name="observacoes" class="form-control" rows="3">{{ postagem[11] or '' }}</textarea>
+  <div class="mb-3"><label class="form-label">Observações</label>
+    <textarea name="observacoes" class="form-control" rows="3">{{ postagem.observacoes }}</textarea>
   </div>
-  <button type="submit" class="btn btn-success">Confirmar Pagamento</button>
+  <button class="btn btn-success">Confirmar</button>
   <a href="{{ url_for('listar_pendentes') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 {% endblock %}
