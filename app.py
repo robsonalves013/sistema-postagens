@@ -1,10 +1,9 @@
-import os
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, after_this_request
 import sqlite3
+import os
 from datetime import datetime, date
-from calendar import monthrange
-
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, after_this_request, jsonify
 from fpdf import FPDF
+from calendar import monthrange
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
@@ -13,21 +12,22 @@ DB_FILE = 'postagens.db'
 NOME_POSTO = {1: "Shopping_Bolivia", 2: "Hotel_Family"}
 
 @app.template_filter('datetimeformat')
-def datetimeformat(value, fmt='%d/%m/%Y'):
-    if not value:
+def datetimeformat(value, format='%d %m %Y'):
+    if value is None:
         return ''
     if isinstance(value, str):
-        for fmt_in in ('%Y-%m-%d', '%Y-%m-%d %H:%M:%S'):
+        try:
+            dt = datetime.strptime(value, '%Y-%m-%d')
+        except:
             try:
-                dt = datetime.strptime(value, fmt_in)
-                break
-            except ValueError:
-                continue
-        else:
-            return value
-    else:
+                dt = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            except:
+                return value
+    elif isinstance(value, (datetime, date)):
         dt = value
-    return dt.strftime(fmt)
+    else:
+        return value
+    return dt.strftime(format)
 
 class SistemaPostagem:
     def __init__(self, db_name=DB_FILE):
@@ -37,8 +37,9 @@ class SistemaPostagem:
         return sqlite3.connect(self.db_name)
 
     def criar_tabelas(self):
-        conn = self.conectar(); c = conn.cursor()
-        c.execute('''
+        conn = self.conectar()
+        cursor = conn.cursor()
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS postagens (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 data_postagem DATE NOT NULL,
@@ -46,15 +47,16 @@ class SistemaPostagem:
                 nome_remetente TEXT NOT NULL,
                 codigo_rastreio TEXT UNIQUE NOT NULL,
                 valor REAL NOT NULL,
-                tipo_postagem TEXT NOT NULL CHECK (tipo_postagem IN ('PAC','SEDEX')),
+                tipo_postagem TEXT NOT NULL CHECK (tipo_postagem IN ('PAC', 'SEDEX')),
                 tipo_pagamento TEXT,
+                status TEXT DEFAULT 'POSTADO',
                 pagamento_pago INTEGER DEFAULT 0,
                 data_pagamento DATE,
                 observacoes TEXT,
                 data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        c.execute('''
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS fechamento_diario (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 data_fechamento DATE NOT NULL,
@@ -71,172 +73,164 @@ class SistemaPostagem:
                 UNIQUE(data_fechamento, posto)
             )
         ''')
-        conn.commit(); conn.close()
+        conn.commit()
+        conn.close()
 
-    def adicionar_postagem(self, dp, posto, nom, cod, val, tp, tpag=None, pago=0, dpag=None, obs=None):
-        conn = self.conectar(); c = conn.cursor()
+    def adicionar_postagem(self, data_postagem, posto, nome_remetente, codigo_rastreio,
+                           valor, tipo_postagem, tipo_pagamento=None, pagamento_pago=0, data_pagamento=None, observacoes=None):
+        conn = self.conectar()
+        cursor = conn.cursor()
         try:
-            c.execute("""
-                INSERT INTO postagens
-                (data_postagem, posto, nome_remetente, codigo_rastreio,
-                 valor, tipo_postagem, tipo_pagamento, pagamento_pago,
-                 data_pagamento, observacoes)
-                VALUES (?,?,?,?,?,?,?,?,?,?)
-            """, (dp, posto, nom, cod, val, tp, tpag, pago, dpag, obs))
-            conn.commit(); return True
+            cursor.execute("""
+                INSERT INTO postagens (data_postagem, posto, nome_remetente, codigo_rastreio,
+                                       valor, tipo_postagem, tipo_pagamento, pagamento_pago, data_pagamento, observacoes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (data_postagem, posto, nome_remetente, codigo_rastreio,
+                  valor, tipo_postagem, tipo_pagamento, pagamento_pago, data_pagamento, observacoes))
+            conn.commit()
+            return True
         except sqlite3.IntegrityError:
+            return False
+        except Exception as e:
+            print(f"Erro: {e}")
             return False
         finally:
             conn.close()
 
     def listar_postagens_dia(self, data, posto=None):
-        conn = self.conectar(); c = conn.cursor()
+        conn = self.conectar()
+        cursor = conn.cursor()
         if posto:
-            c.execute("""
-                SELECT * FROM postagens
-                WHERE date(data_postagem)=date(?) AND posto=?
+            cursor.execute("""
+                SELECT id, data_postagem, posto, nome_remetente, codigo_rastreio,
+                       valor, tipo_postagem, tipo_pagamento, status, pagamento_pago, data_pagamento, observacoes, data_criacao
+                FROM postagens
+                WHERE date(data_postagem) = date(?) AND posto = ?
                 ORDER BY data_criacao DESC
             """, (data, posto))
         else:
-            c.execute("""
-                SELECT * FROM postagens
-                WHERE date(data_postagem)=date(?)
-                ORDER BY posto,data_criacao DESC
+            cursor.execute("""
+                SELECT id, data_postagem, posto, nome_remetente, codigo_rastreio,
+                       valor, tipo_postagem, tipo_pagamento, status, pagamento_pago, data_pagamento, observacoes, data_criacao
+                FROM postagens
+                WHERE date(data_postagem) = date(?)
+                ORDER BY posto, data_criacao DESC
             """, (data,))
-        rows = c.fetchall(); conn.close(); return rows
+        postagens = cursor.fetchall()
+        conn.close()
+        return postagens
 
     def listar_pendentes(self):
-        conn = self.conectar(); c = conn.cursor()
-        c.execute("""
-            SELECT * FROM postagens
-            WHERE pagamento_pago=0
+        conn = self.conectar()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, data_postagem, posto, nome_remetente, codigo_rastreio,
+                   valor, tipo_postagem, tipo_pagamento, status, pagamento_pago, data_pagamento, observacoes, data_criacao
+            FROM postagens
+            WHERE pagamento_pago = 0
             ORDER BY data_postagem ASC
         """)
-        rows = c.fetchall(); conn.close(); return rows
+        pendentes = cursor.fetchall()
+        conn.close()
+        return pendentes
 
     def resumo_dia(self, data, posto):
-        conn = self.conectar(); c = conn.cursor()
-        c.execute("""
+        conn = self.conectar()
+        cursor = conn.cursor()
+        cursor.execute("""
             SELECT
-                COUNT(*),
-                COALESCE(SUM(valor),0),
-                SUM(CASE WHEN tipo_postagem='PAC' THEN 1 ELSE 0 END),
-                SUM(CASE WHEN tipo_postagem='SEDEX' THEN 1 ELSE 0 END),
-                COALESCE(SUM(CASE WHEN tipo_pagamento='PIX' THEN valor ELSE 0 END),0),
-                COALESCE(SUM(CASE WHEN tipo_pagamento='DINHEIRO' THEN valor ELSE 0 END),0)
+                COUNT(*) as total_postagens,
+                COALESCE(SUM(valor), 0) as total_valor,
+                SUM(CASE WHEN tipo_postagem = 'PAC' THEN 1 ELSE 0 END) as total_pac,
+                SUM(CASE WHEN tipo_postagem = 'SEDEX' THEN 1 ELSE 0 END) as total_sedex,
+                COALESCE(SUM(CASE WHEN tipo_pagamento = 'PIX' THEN valor ELSE 0 END), 0) as total_pix,
+                COALESCE(SUM(CASE WHEN tipo_pagamento = 'DINHEIRO' THEN valor ELSE 0 END), 0) as total_dinheiro
             FROM postagens
-            WHERE date(data_postagem)=date(?) AND posto=?
+            WHERE date(data_postagem) = date(?) AND posto = ?
         """, (data, posto))
-        res = c.fetchone(); conn.close()
+        resultado = cursor.fetchone()
+        conn.close()
         return {
-            'total_postagens': res[0],
-            'total_valor': res[1],
-            'total_pac': res[2],
-            'total_sedex': res[3],
-            'total_pix': res[4],
-            'total_dinheiro': res[5],
+            'total_postagens': resultado[0] or 0,
+            'total_valor': float(resultado[1] or 0.0),
+            'total_pac': resultado[2] or 0,
+            'total_sedex': resultado[3] or 0,
+            'total_pix': float(resultado[4] or 0.0),
+            'total_dinheiro': float(resultado[5] or 0.0),
             'posto': posto
         }
 
-    def realizar_fechamento(self, data, posto, func, obs):
+    def realizar_fechamento(self, data, posto, funcionario, observacoes=""):
         resumo = self.resumo_dia(data, posto)
-        if resumo['total_postagens']==0:
+        if resumo['total_postagens'] == 0:
             return False
-        conn = self.conectar(); c = conn.cursor()
-        c.execute("""
-            INSERT OR REPLACE INTO fechamento_diario
-            (data_fechamento,posto,total_postagens,total_valor,
-             total_pac,total_sedex,total_pix,total_dinheiro,
-             funcionario,observacoes)
-            VALUES (?,?,?,?,?,?,?,?,?,?)
-        """, (data, posto,
-              resumo['total_postagens'],resumo['total_valor'],
-              resumo['total_pac'],resumo['total_sedex'],
-              resumo['total_pix'],resumo['total_dinheiro'],
-              func, obs))
-        conn.commit(); conn.close(); return True
+        conn = self.conectar()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                INSERT OR REPLACE INTO fechamento_diario
+                (data_fechamento, posto, total_postagens, total_valor, total_pac,
+                 total_sedex, total_pix, total_dinheiro, funcionario, observacoes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (data, posto, resumo['total_postagens'], resumo['total_valor'],
+                  resumo['total_pac'], resumo['total_sedex'], resumo['total_pix'],
+                  resumo['total_dinheiro'], funcionario, observacoes))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Erro no fechamento: {e}")
+            return False
+        finally:
+            conn.close()
 
-    def listar_postagens_mes(self, inicio, fim):
-        conn = self.conectar(); c = conn.cursor()
-        c.execute("""
-            SELECT * FROM postagens
-            WHERE data_postagem BETWEEN ? AND ?
-            ORDER BY data_postagem ASC
-        """, (inicio, fim))
-        rows = c.fetchall(); conn.close(); return rows
-
-    def resumo_mes(self, inicio, fim):
-        conn = self.conectar(); c = conn.cursor()
-        c.execute("""
-            SELECT
-                COUNT(*),
-                COALESCE(SUM(valor),0),
-                SUM(CASE WHEN tipo_postagem='PAC' THEN 1 ELSE 0 END),
-                SUM(CASE WHEN tipo_postagem='SEDEX' THEN 1 ELSE 0 END),
-                COALESCE(SUM(CASE WHEN tipo_pagamento='PIX' THEN valor ELSE 0 END),0),
-                COALESCE(SUM(CASE WHEN tipo_pagamento='DINHEIRO' THEN valor ELSE 0 END),0)
+    def listar_postagens_mes(self, primeiro_dia, ultimo_dia):
+        conn = self.conectar()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, data_postagem, posto, nome_remetente, codigo_rastreio,
+                   valor, tipo_postagem, tipo_pagamento, status, pagamento_pago, data_pagamento, observacoes, data_criacao
             FROM postagens
             WHERE data_postagem BETWEEN ? AND ?
-        """, (inicio, fim))
-        res = c.fetchone(); conn.close(); return res
+            ORDER BY data_postagem ASC
+        """, (primeiro_dia, ultimo_dia))
+        postagens = cursor.fetchall()
+        conn.close()
+        return postagens
 
-def gerar_pdf_fechamento(resumo, postagens):
-    nome = f'fechamento_{resumo["posto"]}_{resumo["total_postagens"]}.pdf'
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, f'Fechamento Posto {resumo["posto"]}', ln=True, align='C')
-    pdf.ln(5)
-    pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 8, f'Total Postagens: {resumo["total_postagens"]}', ln=True)
-    pdf.cell(0, 8, f'Valor Total: R$ {resumo["total_valor"]:.2f}', ln=True)
-    pdf.cell(0, 8, f'PAC: {resumo["total_pac"]}  SEDEX: {resumo["total_sedex"]}', ln=True)
-    pdf.cell(0, 8, f'PIX: R$ {resumo["total_pix"]:.2f}  Dinheiro: R$ {resumo["total_dinheiro"]:.2f}', ln=True)
-    pdf.ln(8)
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(30, 8, 'Data', 1)
-    pdf.cell(40, 8, 'Remetente', 1)
-    pdf.cell(40, 8, 'Cód. Rastreio', 1)
-    pdf.cell(30, 8, 'Valor', 1)
-    pdf.ln()
-    pdf.set_font("Arial", '', 9)
-    for p in postagens:
-        pdf.cell(30, 8, p[1], 1)
-        pdf.cell(40, 8, p[3][:20], 1)
-        pdf.cell(40, 8, p[4], 1)
-        pdf.cell(30, 8, f'R$ {p[5]:.2f}', 1)
-        pdf.ln()
-    pdf.output(nome)
-    return nome
+    def resumo_mes(self, primeiro_dia, ultimo_dia):
+        conn = self.conectar()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                COUNT(*),
+                COALESCE(SUM(valor), 0),
+                SUM(CASE WHEN tipo_postagem = 'PAC' THEN 1 ELSE 0 END),
+                SUM(CASE WHEN tipo_postagem = 'SEDEX' THEN 1 ELSE 0 END),
+                COALESCE(SUM(CASE WHEN tipo_pagamento = 'PIX' THEN valor ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN tipo_pagamento = 'DINHEIRO' THEN valor ELSE 0 END), 0)
+            FROM postagens
+            WHERE data_postagem BETWEEN ? AND ?
+        """, (primeiro_dia, ultimo_dia))
+        resumo = cursor.fetchone()
+        conn.close()
+        return resumo
 
 sistema = SistemaPostagem()
 sistema.criar_tabelas()
 
 @app.route('/')
 def index():
-    hoje = date.today().strftime('%d/%m/%Y')
+    hoje = date.today().strftime('%d %m %Y')
     hoje_db = date.today().strftime('%Y-%m-%d')
-    postagens = sistema.listar_postagens_dia(hoje_db)
-    resumo_posto1 = sistema.resumo_dia(hoje_db,1)
-    resumo_posto2 = sistema.resumo_dia(hoje_db,2)
+    postagens_hoje = sistema.listar_postagens_dia(hoje_db)
+    resumo_posto1 = sistema.resumo_dia(hoje_db, 1)
+    resumo_posto2 = sistema.resumo_dia(hoje_db, 2)
     return render_template('index.html',
-                           postagens=postagens,
+                           postagens=postagens_hoje,
                            resumo_posto1=resumo_posto1,
                            resumo_posto2=resumo_posto2,
                            data_hoje=hoje,
                            NOME_POSTO=NOME_POSTO)
-
-@app.route('/api/postagens/<int:posto>')
-def api_postagens(posto):
-    hoje = date.today().strftime('%Y-%m-%d')
-    rows = sistema.listar_postagens_dia(hoje,posto)
-    return jsonify(postagens=[{
-        'nome_remetente':r[3],
-        'tipo_postagem':r[6],
-        'valor':r[5],
-        'tipo_pagamento':r[7] or 'Pendente',
-        'data_postagem':r[1]
-    } for r in rows])
 
 @app.route('/nova_postagem', methods=['GET', 'POST'])
 def nova_postagem():
