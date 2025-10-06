@@ -1,17 +1,41 @@
 {% extends "base.html" %}
-{% block title %}Relatório Mensal{% endblock %}
+{% block title %}Relatório Mensal - Resultado{% endblock %}
 {% block content %}
-<h2>Gerar Relatório Mensal</h2>
-<form method="POST">
-  <div class="mb-3">
-    <label class="form-label">Mês</label>
-    <select name="mes" class="form-select" required>
-      {% for m in range(1,13) %}<option>{{m}}</option>{% endfor %}
-    </select>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Ano</label>
-    <input type="number" name="ano" value="{{ current_year }}" class="form-control" required>
-  </div>
-  <button class="btn btn-primary">Gerar</button>
+<h2>Relatório Mensal - {{ mes }}/{{ ano }}</h2>
+
+<a href="{{ url_for('gerar_pdf_relatorio_mensal', mes=mes, ano=ano) }}" target="_blank" class="btn btn-danger mb-3">
+  <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+</a>
+
+<div class="table-responsive">
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Data</th>
+      <th>Posto</th>
+      <th>Remetente</th>
+      <th>Código</th>
+      <th>Valor</th>
+      <th>Tipo</th>
+      <th>Pagamento</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in postagens %}
+    <tr>
+      <td>{{ p[1] | datetimeformat }}</td>
+      <td>{{ NOME_POSTO[p[2]] }}</td>
+      <td>{{ p[3] }}</td>
+      <td>{{ p[4] }}</td>
+      <td>R$ {{ '%.2f'|format(p[5]) }}</td>
+      <td>{{ p[6] }}</td>
+      <td>{{ p[7] or 'Pendente' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<a href="{{ url_for('relatorio_mensal') }}" class="btn btn-secondary mt-3">Voltar</a>
+
 {% endblock %}

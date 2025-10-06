@@ -1,46 +1,109 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>{% block title %}Sistema de Postagens{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Sistema de Postagens - Foguete Express 🚀{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        body { 
+            background-color: #f8f9fa; 
+        }
+        .navbar {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary, .btn-success, .btn-warning, .btn-info {
+            min-height: 44px;
+            font-size: 1rem;
+            border: none;
+            padding: 0.5rem 1rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+        .btn-info {
+            background: linear-gradient(135deg, #2193b0, #6dd5ed);
+            color: white;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .posto-1 {
+            border-left: 5px solid #007bff;
+        }
+        .posto-2 {
+            border-left: 5px solid #28a745;
+        }
+        .alert {
+            border-radius: 10px;
+        }
+        body, label, input, select, button, textarea {
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+    </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="{{ url_for('index') }}">Foguete Express</a>
-    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="nav">
-      <ul class="navbar-nav ms-auto">
-        {% if current_user.is_authenticated %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Dashboard</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('nova_postagem') }}">Nova Postagem</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('fechamento') }}">Fechamento</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('relatorio_mensal') }}">Relatório Mensal</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_pendentes') }}">Pendentes</a></li>
-          {% if current_user.role=='admin' %}
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Usuários</a></li>
-          {% endif %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
-        {% else %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
-        {% endif %}
-      </ul>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-mailbox"></i> Sistema de Postagens - Foguete Express 🚀
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/nova_postagem"><i class="bi bi-plus-circle"></i> Nova Postagem</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/fechamento"><i class="bi bi-clipboard-check"></i> Fechamento</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('relatorio_mensal') }}"><i class="bi bi-bar-chart"></i> Relatório Mensal</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_pendentes') }}">Pagamentos Pendentes</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="container-fluid mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' }}"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
     </div>
-  </div>
-</nav>
-<div class="container mt-4">
-  {% with msgs = get_flashed_messages(with_categories=true) %}
-    {% for cat,msg in msgs %}
-      <div class="alert alert-{{ 'success' if cat=='success' else 'danger' }}">{{ msg }}</div>
-    {% endfor %}
-  {% endwith %}
-  {% block content %}{% endblock %}
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light text-center mt-5 py-3">
+        <div class="container-fluid">
+            <p>&copy; 2025 Sistema de Postagens Foguete Express - RobTech Service ©</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
